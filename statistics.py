@@ -1,9 +1,10 @@
 __author__ = 'nikita_kartashov'
 
 from collections import Counter, defaultdict
-from queue import Queue
 
 from hashable_edge import HashableEdge
+
+from branch import compute_tree_score_with_branches
 
 
 ALL_GENOMES = frozenset(['A', 'B', 'C', 'D'])
@@ -13,21 +14,31 @@ DEFAULT_TOPOLOGY = (('A', 'B'), ('C', 'D'))
 def normalize_multicolor(multicolor):
     first_color = frozenset(multicolor)
     second_color = ALL_GENOMES - first_color
-    if first_color < second_color:
-        return first_color, second_color
+    if len(first_color) != len(second_color):
+        if len(first_color) < len(second_color):
+            return first_color, second_color
+        else:
+            return second_color, first_color
     else:
-        return second_color, first_color
+        if first_color < second_color:
+            return first_color, second_color
+        else:
+            return second_color, first_color
 
 
-def get_distribution_metric(breakpoint_graph):
-    return Counter(normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges())
+def get_distribution_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
+    distribution = \
+        Counter(normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges())
+    # Score is negative, so we can compare metrics
+    NEGATIVE = -1
+    return NEGATIVE * compute_tree_score_with_branches(distribution.items(), tree_topology)
 
 
 def edge_vertices(edge):
     return [edge.vertex1, edge.vertex2]
 
 
-def get_simple_paths_metric(breakpoint_graph):
+def get_simple_paths_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
     result = defaultdict(lambda: 0)
 
     def is_vertex_simple(vertex):
@@ -42,7 +53,9 @@ def get_simple_paths_metric(breakpoint_graph):
                        is_edge_simple(edge)):
         result[multicolor] += 1
 
-    return result
+    # Score is negative, so we can compare metrics
+    NEGATIVE = -1
+    return NEGATIVE * compute_tree_score_with_branches(result.items(), tree_topology)
 
 
 def get_distance_by_additive_metric(breakpoint_graph, metric, tree_topology=DEFAULT_TOPOLOGY):
@@ -53,13 +66,15 @@ def get_distance_by_additive_metric(breakpoint_graph, metric, tree_topology=DEFA
 # Calculates S_BP as in Wei Xu paper, %tree_topology% is a tuple, of tuples of genomes,
 # like (('A', 'B'), ('C', 'D')) denotes AB|CD
 def get_bp_distance_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
-    return get_distance_by_additive_metric(breakpoint_graph, get_bp_distance_two_genomes, tree_topology)
+    return int(get_distance_by_additive_metric(
+        breakpoint_graph, get_bp_distance_two_genomes, tree_topology))
 
 
 # Calculates S_DCJ as in Wei Xu paper, %tree_topology% is a tuple, of tuples of genomes,
 # like (('A', 'B'), ('C', 'D')) denotes AB|CD
 def get_dcj_distance_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
-    return get_distance_by_additive_metric(breakpoint_graph, get_dcj_distance_two_genomes, tree_topology)
+    return int(get_distance_by_additive_metric(
+        breakpoint_graph, get_dcj_distance_two_genomes, tree_topology))
 
 
 # Calculates d_BP between two genomes, %genomes% is a tuple of them
@@ -77,7 +92,6 @@ def get_bp_distance_two_genomes(breakpoint_graph, genomes):
 # Calculates d_DCJ between two genomes, %genomes% is a tuple of them
 # like ('A', 'B')
 def get_dcj_distance_two_genomes(breakpoint_graph, genomes):
-
     def is_consistent_with_genomes(edge):
         return any(genome in edge.multicolor.colors for genome in genomes)
 
@@ -103,6 +117,7 @@ def get_dcj_distance_two_genomes(breakpoint_graph, genomes):
             for edge in filter(should_be_visited, breakpoint_graph.get_edges_by_vertex(vertex)):
                 def unvisited_end():
                     return edge.vertex1 if edge.vertex1 not in visited else edge.vertex2
+
                 next_node = unvisited_end()
 
     return block_number - connected_components
