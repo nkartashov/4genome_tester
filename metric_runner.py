@@ -28,4 +28,10 @@ def run_metrics(breakpoint_graph):
 
 def compare_metric_results(breakpoint_graph, right_tree=RIGHT_TREE):
     metric_results = run_metrics(breakpoint_graph)
-    return list(right_tree == min(score_tuple)[1] for score_tuple in metric_results)
+    def decide_if_right(score_tuple):
+        scored_trees = list(score_tuple)
+        min_score = min(scored_trees)[0]
+        trees_with_min_score = list(tree for score, tree in scored_trees if score == min_score)
+        return len(trees_with_min_score) == 1 and trees_with_min_score[0] == right_tree
+
+    return list(decide_if_right(score_tuple) for score_tuple in metric_results)

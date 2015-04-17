@@ -4,7 +4,7 @@ from sys import argv
 
 from bg.bg_io import GRIMMReader
 
-from iterate_trees import compare_metric_results
+from metric_runner import compare_metric_results
 
 if __name__ == '__main__':
     if len(argv) < 2:
