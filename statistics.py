@@ -3,7 +3,6 @@ __author__ = 'nikita_kartashov'
 from collections import Counter, defaultdict
 
 from hashable_edge import HashableEdge
-
 from branch import compute_tree_score_with_branches
 
 
@@ -49,8 +48,9 @@ def get_simple_paths_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
     def is_edge_simple(edge):
         return all(vertex in simple_vertices for vertex in edge_vertices(edge))
 
-    for multicolor in (normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges() if
-                       is_edge_simple(edge)):
+    for multicolor in \
+            (normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges() if
+             is_edge_simple(edge)):
         result[multicolor] += 1
 
     # Score is negative, so we can compare metrics
