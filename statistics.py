@@ -4,53 +4,28 @@ from collections import Counter, defaultdict
 
 from hashable_edge import HashableEdge
 from branch import compute_tree_score_with_branches
+from breakpoint_graph_extensions import normalize_multicolor, \
+    edge_vertices, is_edge_simple, get_vertex_colored_neighbours, get_vertex_sized_neigbours, get_vertex_neighbours
 
 
 ALL_GENOMES = frozenset(['A', 'B', 'C', 'D'])
 DEFAULT_TOPOLOGY = (('A', 'B'), ('C', 'D'))
 
 
-def normalize_multicolor(multicolor):
-    first_color = frozenset(multicolor)
-    second_color = ALL_GENOMES - first_color
-    if len(first_color) != len(second_color):
-        if len(first_color) < len(second_color):
-            return first_color, second_color
-        else:
-            return second_color, first_color
-    else:
-        if first_color < second_color:
-            return first_color, second_color
-        else:
-            return second_color, first_color
-
-
 def get_distribution_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
     distribution = \
-        Counter(normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges())
+        Counter(normalize_multicolor(edge.multicolor.colors, ALL_GENOMES) for edge in breakpoint_graph.edges())
     # Score is negative, so we can compare metrics
     NEGATIVE = -1
     return NEGATIVE * compute_tree_score_with_branches(distribution.items(), tree_topology)
 
 
-def edge_vertices(edge):
-    return [edge.vertex1, edge.vertex2]
-
-
 def get_simple_paths_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
     result = defaultdict(lambda: 0)
 
-    def is_vertex_simple(vertex):
-        return len(list(breakpoint_graph.get_edges_by_vertex(vertex))) == 2
-
-    simple_vertices = set(filter(is_vertex_simple, breakpoint_graph.nodes()))
-
-    def is_edge_simple(edge):
-        return all(vertex in simple_vertices for vertex in edge_vertices(edge))
-
     for multicolor in \
-            (normalize_multicolor(edge.multicolor.colors) for edge in breakpoint_graph.edges() if
-             is_edge_simple(edge)):
+            (normalize_multicolor(edge.multicolor.colors, ALL_GENOMES) for edge in breakpoint_graph.edges() if
+             is_edge_simple(breakpoint_graph, edge)):
         result[multicolor] += 1
 
     # Score is negative, so we can compare metrics
@@ -121,3 +96,53 @@ def get_dcj_distance_two_genomes(breakpoint_graph, genomes):
                 next_node = unvisited_end()
 
     return block_number - connected_components
+
+
+def get_cylinder_pattern_score(breakpoint_graph):
+    cylinder_patterns = set()
+    # Iterate on nodes to check all start nodes
+    for start_node in breakpoint_graph.nodes():
+        # Check every combination of 2 color edge and 1 color edge
+        for double_vertex, double_edge in get_vertex_sized_neigbours(breakpoint_graph, start_node, size=2):
+            for single_vertex, single_edge in get_vertex_sized_neigbours(breakpoint_graph, start_node, size=1):
+                # Take vertices on other side of the edges
+                double_edge_color = double_edge.multicolor
+                single_edge_color = single_edge.multicolor
+                start_to_single_to_double = frozenset(get_vertex_colored_neighbours(breakpoint_graph,
+                                                                                    single_vertex,
+                                                                                    double_edge_color,
+                                                                                    with_edges=False))
+                if len(start_to_single_to_double) == 0:
+                    continue
+
+                start_to_double_to_new_single = frozenset(get_vertex_sized_neigbours(breakpoint_graph,
+                                                                                     double_vertex,
+                                                                                     size=1,
+                                                                                     with_edges=False))
+                if len(start_to_double_to_new_single) == 0:
+                    continue
+
+                final_vertices = (final_vertex for final_vertex in
+                                  start_to_single_to_double.intersection(start_to_double_to_new_single) if
+                                  breakpoint_graph.get_edge_by_two_vertices(final_vertex,
+                                                                            double_vertex).multicolor != single_edge_color)
+
+                for pattern in \
+                        (frozenset([start_node, single_vertex, double_vertex, final_vertex]) for final_vertex in
+                         final_vertices):
+                    cylinder_patterns.add(pattern)
+    return cylinder_patterns
+
+
+if __name__ == '__main__':
+    from bg import BreakpointGraph, Multicolor
+    from networkx import MultiGraph
+    multigraph = MultiGraph()
+    multigraph.add_nodes_from(range(4))
+    breakpoint_graph = BreakpointGraph(multigraph)
+    double_color = [0, 1]
+    breakpoint_graph.add_edge(0, 1, Multicolor(*double_color))
+    breakpoint_graph.add_edge(2, 3, Multicolor(*double_color))
+    breakpoint_graph.add_edge(1, 2, Multicolor(2))
+    breakpoint_graph.add_edge(0, 3, Multicolor(3))
+    print(get_cylinder_pattern_score(breakpoint_graph))
