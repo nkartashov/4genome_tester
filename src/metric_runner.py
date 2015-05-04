@@ -3,18 +3,24 @@ __author__ = 'nikita_kartashov'
 from statistics import get_distribution_metric, \
     get_simple_paths_metric, \
     get_bp_distance_metric, \
-    get_dcj_distance_metric
+    get_dcj_distance_metric, \
+    get_ca_metric, \
+    get_mca_metric
 
 A, B, C, D = ['A', 'B', 'C', 'D']
 
-METRICS = [get_distribution_metric,
+METRICS = (get_distribution_metric,
            get_simple_paths_metric,
            get_bp_distance_metric,
-           get_dcj_distance_metric]
+           get_dcj_distance_metric,
+           get_ca_metric,
+           get_mca_metric)
 
 METRIC_NUMBER = len(METRICS)
 
-METRIC_ANNOTATIONS = ['Distribution', 'Simple_Paths', 'S_BP', 'S_DCJ']
+METRIC_ANNOTATIONS = ('Distribution', 'Simple_Paths', 'S_BP', 'S_DCJ', 'S_CA', 'S_MCA')
+
+assert(len(METRIC_ANNOTATIONS) == METRIC_NUMBER)
 
 TREES = [((A, B), (C, D)),
          ((A, C), (B, D)),
