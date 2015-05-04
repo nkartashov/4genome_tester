@@ -5,18 +5,18 @@ from collections import Counter, defaultdict
 from hashable_edge import HashableEdge
 from branch import compute_tree_score_with_branches
 from breakpoint_graph_extensions import normalize_multicolor, \
-    edge_vertices, is_edge_simple, get_vertex_colored_neighbours, get_vertex_sized_neigbours, get_vertex_neighbours
+    edge_vertices, is_edge_simple, get_vertex_colored_neighbours, get_vertex_sized_neighbours
 
 
 ALL_GENOMES = frozenset(['A', 'B', 'C', 'D'])
 DEFAULT_TOPOLOGY = (('A', 'B'), ('C', 'D'))
+NEGATIVE = -1
 
 
 def get_distribution_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
     distribution = \
         Counter(normalize_multicolor(edge.multicolor.colors, ALL_GENOMES) for edge in breakpoint_graph.edges())
     # Score is negative, so we can compare metrics
-    NEGATIVE = -1
     return NEGATIVE * compute_tree_score_with_branches(distribution.items(), tree_topology)
 
 
@@ -29,7 +29,7 @@ def get_simple_paths_metric(breakpoint_graph, tree_topology=DEFAULT_TOPOLOGY):
         result[multicolor] += 1
 
     # Score is negative, so we can compare metrics
-    NEGATIVE = -1
+
     return NEGATIVE * compute_tree_score_with_branches(result.items(), tree_topology)
 
 
@@ -98,13 +98,13 @@ def get_dcj_distance_two_genomes(breakpoint_graph, genomes):
     return block_number - connected_components
 
 
-def get_cylinder_pattern_score(breakpoint_graph):
-    cylinder_patterns = set()
+def get_cylinder_patterns(breakpoint_graph):
+    cylinder_patterns = dict()
     # Iterate on nodes to check all start nodes
     for start_node in breakpoint_graph.nodes():
         # Check every combination of 2 color edge and 1 color edge
-        for double_vertex, double_edge in get_vertex_sized_neigbours(breakpoint_graph, start_node, size=2):
-            for single_vertex, single_edge in get_vertex_sized_neigbours(breakpoint_graph, start_node, size=1):
+        for double_vertex, double_edge in get_vertex_sized_neighbours(breakpoint_graph, start_node, size=2):
+            for single_vertex, single_edge in get_vertex_sized_neighbours(breakpoint_graph, start_node, size=1):
                 # Take vertices on other side of the edges
                 double_edge_color = double_edge.multicolor
                 single_edge_color = single_edge.multicolor
@@ -115,10 +115,10 @@ def get_cylinder_pattern_score(breakpoint_graph):
                 if len(start_to_single_to_double) == 0:
                     continue
 
-                start_to_double_to_new_single = frozenset(get_vertex_sized_neigbours(breakpoint_graph,
-                                                                                     double_vertex,
-                                                                                     size=1,
-                                                                                     with_edges=False))
+                start_to_double_to_new_single = frozenset(get_vertex_sized_neighbours(breakpoint_graph,
+                                                                                      double_vertex,
+                                                                                      size=1,
+                                                                                      with_edges=False))
                 if len(start_to_double_to_new_single) == 0:
                     continue
 
@@ -130,19 +130,31 @@ def get_cylinder_pattern_score(breakpoint_graph):
                 for pattern in \
                         (frozenset([start_node, single_vertex, double_vertex, final_vertex]) for final_vertex in
                          final_vertices):
-                    cylinder_patterns.add(pattern)
+                    cylinder_patterns[pattern] = double_edge_color.colors
     return cylinder_patterns
+
+
+def get_cylinder_pattern_score(breakpoint_graph, topology):
+    cylinder_patterns = get_cylinder_patterns(breakpoint_graph)
+
+    def get_score_on_topology(topology, double_color):
+        # If both colors are on one side, then give 1 else 0
+        # cylinder pattern favors double colors on one side
+        return int(any(all(c in topology[i] for c in double_color) for i in range(len(topology))))
+
+    return NEGATIVE * sum(get_score_on_topology(topology, double_color) for double_color in cylinder_patterns.values())
 
 
 if __name__ == '__main__':
     from bg import BreakpointGraph, Multicolor
     from networkx import MultiGraph
+
     multigraph = MultiGraph()
     multigraph.add_nodes_from(range(4))
     breakpoint_graph = BreakpointGraph(multigraph)
-    double_color = [0, 1]
+    double_color = ['A', 'B']
     breakpoint_graph.add_edge(0, 1, Multicolor(*double_color))
     breakpoint_graph.add_edge(2, 3, Multicolor(*double_color))
-    breakpoint_graph.add_edge(1, 2, Multicolor(2))
-    breakpoint_graph.add_edge(0, 3, Multicolor(3))
-    print(get_cylinder_pattern_score(breakpoint_graph))
+    breakpoint_graph.add_edge(1, 2, Multicolor('C'))
+    breakpoint_graph.add_edge(0, 3, Multicolor('D'))
+    print(get_cylinder_pattern_score(breakpoint_graph, DEFAULT_TOPOLOGY))

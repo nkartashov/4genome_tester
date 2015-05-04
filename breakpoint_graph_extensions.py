@@ -54,7 +54,7 @@ def get_vertex_predicate_neighbours(breakpoint_graph, vertex, predicate=lambda _
     return get_vertex_neighbours(breakpoint_graph, vertex, filter(predicate, edges), with_edges)
 
 
-def get_vertex_sized_neigbours(breakpoint_graph, vertex, size, edges=None, with_edges=True):
+def get_vertex_sized_neighbours(breakpoint_graph, vertex, size, edges=None, with_edges=True):
     return get_vertex_predicate_neighbours(breakpoint_graph,
                                            vertex,
                                            lambda edge: len(edge.multicolor.colors) == size,
