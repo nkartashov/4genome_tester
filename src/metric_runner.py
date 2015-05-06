@@ -1,26 +1,30 @@
 __author__ = 'nikita_kartashov'
 
-from statistics import get_distribution_metric, \
+from operator import itemgetter
+
+from .statistics import get_distribution_metric, \
     get_simple_paths_metric, \
     get_bp_distance_metric, \
     get_dcj_distance_metric, \
+    get_cylinder_pattern_metric, \
     get_ca_metric, \
     get_mca_metric
 
 A, B, C, D = ['A', 'B', 'C', 'D']
 
-METRICS = (get_distribution_metric,
-           get_simple_paths_metric,
-           get_bp_distance_metric,
-           get_dcj_distance_metric,
-           get_ca_metric,
-           get_mca_metric)
+ANNOTATED_METRICS = ((get_distribution_metric, 'Distribution'),
+                     (get_simple_paths_metric, 'Simple_Paths'),
+                     (get_cylinder_pattern_metric, 'Cylinder_pattern'),
+                     (get_bp_distance_metric, 'S_BP'),
+                     (get_dcj_distance_metric, 'S_DCJ'),
+                     (get_ca_metric, 'S_CA'),
+                     (get_mca_metric, 'S_MCA'))
 
+METRICS = tuple(map(itemgetter(0), ANNOTATED_METRICS))
 METRIC_NUMBER = len(METRICS)
+METRIC_ANNOTATIONS = tuple(map(itemgetter(1), ANNOTATED_METRICS))
 
-METRIC_ANNOTATIONS = ('Distribution', 'Simple_Paths', 'S_BP', 'S_DCJ', 'S_CA', 'S_MCA')
 
-assert(len(METRIC_ANNOTATIONS) == METRIC_NUMBER)
 
 TREES = [((A, B), (C, D)),
          ((A, C), (B, D)),

@@ -2,11 +2,11 @@ __author__ = 'nikita_kartashov'
 
 from collections import Counter, defaultdict
 from math import ceil
-
 from bg import Multicolor
-from hashable_edge import HashableEdge
-from branch import compute_tree_score_with_branches
-from breakpoint_graph_extensions import normalize_multicolor, \
+
+from .hashable_edge import HashableEdge
+from .branch import compute_tree_score_with_branches
+from .breakpoint_graph_extensions import normalize_multicolor, \
     edge_vertices, is_edge_simple, get_vertex_colored_neighbours, get_vertex_sized_neighbours, \
     traverse_node_starting_in_color
 
@@ -138,7 +138,7 @@ def find_cylinder_patterns(breakpoint_graph):
     return cylinder_patterns
 
 
-def get_cylinder_pattern_score(breakpoint_graph, topology):
+def get_cylinder_pattern_metric(breakpoint_graph, topology):
     cylinder_patterns = find_cylinder_patterns(breakpoint_graph)
 
     def get_score_on_topology(topology, double_color):
@@ -203,7 +203,7 @@ if __name__ == '__main__':
         breakpoint_graph.add_edge(2, 3, Multicolor(*double_color))
         breakpoint_graph.add_edge(1, 2, Multicolor('C'))
         breakpoint_graph.add_edge(0, 3, Multicolor('D'))
-        assert (get_cylinder_pattern_score(breakpoint_graph, DEFAULT_TOPOLOGY) == -1)
+        assert (get_cylinder_pattern_metric(breakpoint_graph, DEFAULT_TOPOLOGY) == -1)
 
     def test_paths():
         multigraph = MultiGraph()
