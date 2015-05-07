@@ -61,6 +61,11 @@ def main():
         print("Path {0} is not a directory path".format(input_folder))
         exit(1)
 
+    folder_filterer = lambda _: True
+
+    if len(argv) == 3:
+        folder_filterer = lambda folder: folder.startswith(argv[2])
+
     folder_header = ('run', 'e1', 'e2')
 
     setup_logging()
@@ -68,7 +73,8 @@ def main():
 
     with StdOutPrinter() as printer:
         printer.write_header(chain(folder_header, METRICS.metric_annotations()), max_width)
-        for folder in (f for f in listdir(input_folder) if path.isdir(path.join(input_folder, f))):
+        for folder in (f for f in listdir(input_folder) if
+                       folder_filterer(f) and path.isdir(path.join(input_folder, f))):
             folder_result = run_computation_on_folder(path.join(input_folder, folder))
             printer.write_row(folder.split('_'), folder_result, max_width)
             log.info('Finished directory {0}'.format(folder))
