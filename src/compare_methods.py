@@ -7,7 +7,7 @@ import logging as log
 
 from bg.bg_io import GRIMMReader
 
-from .metric_runner import compare_metric_results, METRIC_NUMBER, METRIC_ANNOTATIONS
+from .metric_runner import compare_metric_results, METRICS
 from .output.stdout_printer import StdOutPrinter
 
 
@@ -25,7 +25,7 @@ def run_metrics_on_block_folder(block_folder_path):
 
 
 def reduce_run_results(run_results):
-    result_sum = [0] * METRIC_NUMBER
+    result_sum = [0] * METRICS.metric_number()
     result_number = 0
     for result in run_results:
         for i, e in enumerate(result):
@@ -64,10 +64,10 @@ def main():
     folder_header = ('run', 'e1', 'e2')
 
     setup_logging()
-    max_width = max(map(len, METRIC_ANNOTATIONS))
+    max_width = max(map(len, METRICS.metric_annotations()))
 
     with StdOutPrinter() as printer:
-        printer.write_header(chain(folder_header, METRIC_ANNOTATIONS), max_width)
+        printer.write_header(chain(folder_header, METRICS.metric_annotations()), max_width)
         for folder in (f for f in listdir(input_folder) if path.isdir(path.join(input_folder, f))):
             folder_result = run_computation_on_folder(path.join(input_folder, folder))
             printer.write_row(folder.split('_'), folder_result, max_width)

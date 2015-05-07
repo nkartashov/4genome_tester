@@ -5,7 +5,13 @@ from itertools import chain
 from bg import Multicolor
 
 
-def normalize_multicolor(multicolor, all_genomes):
+def multicolor_to_normalized_split(multicolor, all_genomes):
+    """
+    Returns all color split, with smaller color to the left
+    :param multicolor: multicolor which is a subset of all_genomes
+    :param all_genomes: all genomes as a frozenset
+    :return: tuple of colors
+    """
     first_color = frozenset(multicolor)
     second_color = all_genomes - first_color
     if len(first_color) != len(second_color):
@@ -21,10 +27,21 @@ def normalize_multicolor(multicolor, all_genomes):
 
 
 def edge_vertices(edge):
+    """
+    Returns edge's vertices as a list
+    :param edge: edge in question
+    :return: list of edge's vertices
+    """
     return [edge.vertex1, edge.vertex2]
 
 
 def vertex_multidegree(breakpoint_graph, vertex):
+    """
+    Counts the multidegree of a vertex from breakpoint_graph
+    :param breakpoint_graph: breakpoint graph from which vertex is taken
+    :param vertex:
+    :return: the multidegree of a vertex (number of multiedges from it)
+    """
     return len(list(breakpoint_graph.get_edges_by_vertex(vertex)))
 
 
@@ -75,6 +92,26 @@ def get_vertex_colored_neighbours(breakpoint_graph, vertex, color, edges=None, w
     return get_vertex_predicate_neighbours(breakpoint_graph,
                                            vertex,
                                            color_comparer,
+                                           edges,
+                                           with_edges)
+
+
+def get_vertex_coloured_sized_neighbours(breakpoint_graph, vertex, size, colors, edges=None,
+                                         with_edges=True):
+    def check_inclusion(color, edge):
+        if isinstance(color, Multicolor):
+            return color < edge.multicolor
+        return frozenset(color).issubset(frozenset(edge.multicolor.colors))
+
+    def coloured_from_colours(edge):
+        return any(check_inclusion(color, edge) for color in colors)
+
+    def coloured_and_sized(edge):
+        return len(edge.multicolor.colors) == size and coloured_from_colours(edge)
+
+    return get_vertex_predicate_neighbours(breakpoint_graph,
+                                           vertex,
+                                           coloured_and_sized,
                                            edges,
                                            with_edges)
 
