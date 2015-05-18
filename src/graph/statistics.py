@@ -20,7 +20,6 @@ B = 'B'
 C = 'C'
 D = 'D'
 ALL_GENOMES = frozenset([A, B, C, D])
-DEFAULT_TOPOLOGY = ((A, B), (C, D))
 NEGATIVE = -1
 
 
@@ -93,11 +92,11 @@ def get_dcj_distance_metric(breakpoint_graph, tree_topology):
 
 def get_bp_distance_two_genomes(breakpoint_graph, genomes: tuple):
     """
-        Computes d_BP between two genomes
-        :param breakpoint_graph: given BP graph to score against
-        :param genomes: tuple of genome names like ('A', 'B')
-        :return: BP score
-        """
+    Computes d_BP between two genomes
+    :param breakpoint_graph: given BP graph to score against
+    :param genomes: tuple of genome names like ('A', 'B')
+    :return: BP score
+    """
     block_number = len(list(breakpoint_graph.nodes())) / 2
 
     def get_adjacencies(genome):
@@ -109,11 +108,11 @@ def get_bp_distance_two_genomes(breakpoint_graph, genomes: tuple):
 
 def get_dcj_distance_two_genomes(breakpoint_graph, genomes):
     """
-        Computes d_DCJ between two genomes
-        :param breakpoint_graph: given BP graph to score against
-        :param genomes: tuple of genome names like ('A', 'B')
-        :return: DCJ score
-        """
+    Computes d_DCJ between two genomes
+    :param breakpoint_graph: given BP graph to score against
+    :param genomes: tuple of genome names like ('A', 'B')
+    :return: DCJ score
+    """
 
     def is_consistent_with_genomes(edge):
         return any(genome in edge.multicolor.colors for genome in genomes)
@@ -283,19 +282,6 @@ def get_score_on_topology_favouring(topology, colour_to_favour):
     :return: 0 if colors are on different sides, 1 otherwise
     """
     return int(any(all(c in topology[i] for c in colour_to_favour) for i in range(len(topology))))
-
-
-# def get_cylinder_pattern_metric(breakpoint_graph, topology):
-# """
-# Look for cylinder patterns, then score topology by using favouring colours
-# :param breakpoint_graph: given BP graph to score against
-# :param topology: given topology in the form (('A', 'B'), ('C', 'D'))
-# :return: minimized score (i.e. smaller the score the better)
-# """
-# cylinder_patterns = find_cylinder_patterns(breakpoint_graph)
-#
-# return NEGATIVE * sum(
-# get_score_on_topology_favouring(topology, double_color) for double_color in cylinder_patterns.values())
 
 
 def get_cylinder_pattern_metric_batch(breakpoint_graph, topologies):

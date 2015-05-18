@@ -4,6 +4,7 @@ from sys import argv
 from os import path, walk, listdir
 from itertools import chain
 import logging as log
+import multiprocessing as mp
 
 from bg.bg_io import GRIMMReader
 
@@ -73,11 +74,14 @@ def main():
 
     with StdOutPrinter() as printer:
         printer.write_header(chain(folder_header, METRICS.metric_annotations()), max_width)
-        for folder in (f for f in listdir(input_folder) if
-                       folder_filterer(f) and path.isdir(path.join(input_folder, f))):
-            folder_result = run_computation_on_folder(path.join(input_folder, folder))
+        folders_to_work_on = [f for f in listdir(input_folder) if
+                              folder_filterer(f) and path.isdir(path.join(input_folder, f))]
+        parallel_pool = mp.Pool()
+        folder_results = parallel_pool.map(run_computation_on_folder,
+                                           [path.join(input_folder, f) for f in folders_to_work_on])
+        for folder, folder_result in zip(folders_to_work_on, folder_results):
             printer.write_row(folder.split('_'), folder_result, max_width)
-            log.info('Finished directory {0}'.format(folder))
+            # log.info('Finished directory {0}'.format(folder))
 
 
 if __name__ == '__main__':

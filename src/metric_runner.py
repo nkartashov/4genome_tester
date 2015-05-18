@@ -12,8 +12,8 @@ from .metrics.metrics import Metrics
 
 A, B, C, D = ['A', 'B', 'C', 'D']
 
-ANNOTATED_SINGLE_METRICS = ((get_distribution_metric, 'Distribution'),
-                            (get_simple_paths_metric, 'Simple_Paths'),
+ANNOTATED_SINGLE_METRICS = ((get_distribution_metric, 'D'),  # Distribution
+                            (get_simple_paths_metric, 'SP'),  # Simple Paths
                             (get_bp_distance_metric, 'S_BP'),
                             (get_dcj_distance_metric, 'S_DCJ'),
                             (get_ca_metric, 'S_CA'),
