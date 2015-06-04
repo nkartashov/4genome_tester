@@ -10,12 +10,13 @@ from src.graph.statistics import get_distribution_metric, \
 
 from .metrics.metrics import Metrics
 
-ANNOTATED_SINGLE_METRICS = ((get_distribution_metric, 'D'),  # Distribution
-                            (get_simple_paths_metric, 'SP'),  # Simple Paths
-                            (get_bp_distance_metric, 'S_BP'),
-                            (get_dcj_distance_metric, 'S_DCJ'),
-                            (get_ca_metric, 'S_CA'),
-                            (get_mca_metric, 'S_MCA'),
+ANNOTATED_SINGLE_METRICS = (
+    # (get_distribution_metric, 'D'),  # Distribution
+    #                         (get_simple_paths_metric, 'SP'),  # Simple Paths
+    #                         (get_bp_distance_metric, 'S_BP'),
+    #                         (get_dcj_distance_metric, 'S_DCJ'),
+                            (get_ca_metric, 'CA'),
+                            (get_mca_metric, 'MCA'),
                             )
 
 ANNOTATED_BATCH_METRICS = ((get_cumulative_metric_batch, 'MCA+'),)
