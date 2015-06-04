@@ -15,5 +15,4 @@ class CachedStatistic(object):
             self._last_bp_graph = breakpoint_graph
             self._last_topology = topology
             self._cached = self._f(*args, **kwargs)
-            return self._cached
         return self._cached

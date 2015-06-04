@@ -5,8 +5,6 @@ from math import ceil
 from itertools import chain
 from functools import reduce
 
-from bg import Multicolor
-
 from src.graph.cached_statistic import CachedStatistic
 from src.graph.hashable_edge import HashableEdge
 from src.graph.branch import compute_tree_score_with_branches
@@ -274,6 +272,28 @@ def find_bag_patterns(breakpoint_graph):
     return bag_patterns
 
 
+def find_diamond_patterns(breakpoint_graph):
+    diamond_patterns = dict()
+    # Iterate on nodes to check all start nodes
+    for start_node in breakpoint_graph.nodes():
+        # Check every combination of 2 color edge and 1 color edge
+        for first_vertex, first_edge in get_vertex_sized_neighbours(breakpoint_graph, start_node, size=1):
+            for second_vertex, second_edge in ((v, e) for v, e in
+                                               get_vertex_sized_neighbours(breakpoint_graph, start_node, size=1)
+                                               if e.multicolor != first_edge.multicolor):
+                for third_vertex, third_edge in ((v, e) for v, e in
+                                                 get_vertex_sized_neighbours(breakpoint_graph, second_vertex, size=1)
+                                                 if e.multicolor != first_edge.multicolor and
+                                                                 e.multicolor != second_edge.multicolor):
+                    last_edge = breakpoint_graph.get_edge_by_two_vertices(third_vertex, first_vertex)
+                    if last_edge.multicolor != first_edge.multicolor and \
+                                    last_edge.multicolor != second_edge.multicolor and \
+                                    last_edge.multicolor != third_edge.multicolor:
+                        diamond_patterns[frozenset([start_node, first_vertex, second_vertex, third_vertex])] = (
+                            first_edge.multicolor + second_edge.multicolor).colors
+    return diamond_patterns
+
+
 def get_score_on_topology_favouring(topology, colour_to_favour):
     """
     Get score of 1 if two colors that are favoured are on one side
@@ -312,7 +332,21 @@ def get_bag_pattern_metric_batch(breakpoint_graph, topologies):
             for topology in topologies)
 
 
-PATTERN_METRICS = (get_cylinder_pattern_metric_batch, get_bag_pattern_metric_batch)
+def get_diamond_pattern_metric_batch(breakpoint_graph, topologies):
+    """
+    Look for diamond patterns, then score every topology from given by using favouring colours
+    :param breakpoint_graph: given BP graph to score against
+    :param topologies: tuple of topologies, each of which is in the form (('A', 'B'), ('C', 'D'))
+    :return: tuple of topologies with scores
+    """
+    diamond_patterns = find_diamond_patterns(breakpoint_graph)
+    return ((NEGATIVE *
+             sum(get_score_on_topology_favouring(topology, double_color)
+                 for double_color in diamond_patterns.values()), topology)
+            for topology in topologies)
+
+
+PATTERN_METRICS = (get_cylinder_pattern_metric_batch, get_bag_pattern_metric_batch, get_diamond_pattern_metric_batch)
 
 
 def transpose(l):
@@ -325,7 +359,9 @@ def get_cumulative_metric_batch(breakpoint_graph, topologies):
 
     def reducer(acc, new_value):
         return acc[0] + new_value[0], acc[1]
-    return (reduce(reducer, topology_row) for topology_row in transpose(tuple(map(tuple, chain((mca,), pattern_metrics)))))
+
+    return (reduce(reducer, topology_row) for topology_row in
+            transpose(tuple(map(tuple, chain((mca,), pattern_metrics)))))
 
 
 if __name__ == '__main__':
@@ -400,8 +436,21 @@ if __name__ == '__main__':
                                                    topology,
                                                    get_size_of_paths_instead_of_cycles=False) == 4)
 
+    def test_diamond():
+        multigraph = MultiGraph()
+        multigraph.add_nodes_from(range(4))
+        breakpoint_graph = BreakpointGraph(multigraph)
+        first_color = ['A', 'C']
+        second_color = ['B', 'D']
+        topology = (first_color, second_color)
+        breakpoint_graph.add_edge(0, 1, Multicolor(*[A]))
+        breakpoint_graph.add_edge(2, 3, Multicolor(*[B]))
+        breakpoint_graph.add_edge(1, 2, Multicolor(*[C]))
+        breakpoint_graph.add_edge(0, 3, Multicolor(*[D]))
+        assert (len(find_diamond_patterns(breakpoint_graph)) == 1)
+
     test_cylinder()
     test_bag()
     test_paths()
     test_cycles()
-    print(transpose(((1, 2), (3, 4), (5, 6))))
+    test_diamond()
